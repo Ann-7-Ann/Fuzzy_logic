@@ -227,25 +227,39 @@ class HumanPlayer(Player):
 # DO NOT MODIFY CODE ABOVE THIS LINE
 # ----------------------------------
 
-# import numpy as np
-# import matplotlib.pyplot as plt
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 class FuzzyPlayer(Player):
     def __init__(self, racket: Racket, ball: Ball, board: Board):
         super(FuzzyPlayer, self).__init__(racket, ball, board)
         # for Mamdami:
-        # x_dist = fuzz.control.Antecedent...
-        # y_dist = fuzz.control.Antecedent...
-        # velocity = fuzz.control.Consequent...
-        # self.racket_controller = fuzz.control.ControlSystem...
+        x_dist = fuzz.control.Antecedent(np.arange(-400,401,1), 'x_diff')
+        y_dist = fuzz.control.Antecedent(np.arange(0,400,1), 'y_diff')
+        velocity = fuzz.control.Consequent(np.arange(-10, 11, 1), 'paddle_speed')
+        #y_dist['far'] = fuzz.trimf(y_dist.universe, [300,350,400])
+        y_dist['near'] = fuzz.trimf(y_dist.universe, [-400, 0,401])
+        x_dist['far_left'] = fuzz.trimf(x_dist.universe, [-400, -100 , -4])
+        x_dist['far_right'] = fuzz.trimf(x_dist.universe, [4, 100, 400])
+        x_dist['center'] = fuzz.trimf(x_dist.universe, [-5, 0, 5])
+        velocity['right'] = fuzz.trimf(velocity.universe, [-15, -10, 2])
+        velocity['left'] = fuzz.trimf(velocity.universe, [2, 10, 15])
+        velocity['stop'] = fuzz.trimf(velocity.universe, [-3, 0, 3])
+        rule1 = fuzz.control.Rule(y_dist['near'] & x_dist['far_left'] , velocity['left'])
+        rule2 = fuzz.control.Rule(y_dist['near'] & x_dist['far_right'] , velocity['right'])
+        #rule3 = fuzz.control.Rule(y_dist['far'] , velocity['stop'])
+        rule4 = fuzz.control.Rule(x_dist['center'] , velocity['stop'])
+        
+        self.racket_controller = fuzz.control.ControlSystem([rule1,rule2,rule4])
 
         # visualize Mamdami
-        # x_dist.view()
-        # ...
+        x_dist.view()
+        y_dist.view()
+        #plt.show() 
 
         # for TSK:
-        # self.x_universe = np.arange...
+        # self.x_universe = np.arange()
         # self.x_mf = {
         #     "far_left": fuzz.trapmf(
         #         self.x_universe,
@@ -261,7 +275,7 @@ class FuzzyPlayer(Player):
         #     ...
         # }
 
-        # visualize TSK
+        # #visualize TSK
         # plt.figure()
         # for name, mf in self.x_mf.items():
         #     plt.plot(self.x_universe, mf, label=name)
@@ -275,8 +289,12 @@ class FuzzyPlayer(Player):
 
     def make_decision(self, x_diff: int, y_diff: int):
         # for Mamdami:
-        # self.racket_controller.compute()
-        # velocity = self.racket_controller.o..
+
+        self.racket_sim = fuzz.control.ControlSystemSimulation(self.racket_controller)       
+        self.racket_sim.input['x_diff'] = x_diff
+        self.racket_sim.input['y_diff'] = y_diff
+        self.racket_sim.compute()
+        velocity = self.racket_sim.output['paddle_speed']
 
         # for TSK:
         # x_vals = {
@@ -300,10 +318,10 @@ class FuzzyPlayer(Player):
         #     for val in activations
         # ) / sum(activations[val] for val in activations)
 
-        return 0
+        return velocity
 
 
 if __name__ == "__main__":
-    game = PongGame(800, 400, NaiveOponent, HumanPlayer)
-    # game = PongGame(800, 400, NaiveOponent, FuzzyPlayer)
+    #game = PongGame(800, 400, NaiveOponent, HumanPlayer)
+    game = PongGame(800, 400, NaiveOponent, FuzzyPlayer)
     game.run()
