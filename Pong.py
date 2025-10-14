@@ -238,8 +238,7 @@ class FuzzyPlayer(Player):
         x_dist = fuzz.control.Antecedent(np.arange(-400,401,1), 'x_diff')
         y_dist = fuzz.control.Antecedent(np.arange(0,400,1), 'y_diff')
         velocity = fuzz.control.Consequent(np.arange(-10, 11, 1), 'paddle_speed')
-        #y_dist['far'] = fuzz.trimf(y_dist.universe, [300,350,400])
-        y_dist['near'] = fuzz.trimf(y_dist.universe, [-400, 0,401])
+        y_dist['near'] = fuzz.trimf(y_dist.universe, [0, 0,401])
         x_dist['far_left'] = fuzz.trimf(x_dist.universe, [-400, -100 , -4])
         x_dist['far_right'] = fuzz.trimf(x_dist.universe, [4, 100, 400])
         x_dist['center'] = fuzz.trimf(x_dist.universe, [-5, 0, 5])
@@ -248,15 +247,14 @@ class FuzzyPlayer(Player):
         velocity['stop'] = fuzz.trimf(velocity.universe, [-3, 0, 3])
         rule1 = fuzz.control.Rule(y_dist['near'] & x_dist['far_left'] , velocity['left'])
         rule2 = fuzz.control.Rule(y_dist['near'] & x_dist['far_right'] , velocity['right'])
-        #rule3 = fuzz.control.Rule(y_dist['far'] , velocity['stop'])
-        rule4 = fuzz.control.Rule(x_dist['center'] , velocity['stop'])
+        rule3 = fuzz.control.Rule(x_dist['center'] , velocity['stop'])
         
-        self.racket_controller = fuzz.control.ControlSystem([rule1,rule2,rule4])
+        self.racket_controller = fuzz.control.ControlSystem([rule1,rule2,rule3])
 
         # visualize Mamdami
         x_dist.view()
         y_dist.view()
-        #plt.show() 
+        plt.show() 
 
         # for TSK:
         # self.x_universe = np.arange()
