@@ -234,52 +234,55 @@ import matplotlib.pyplot as plt
 class FuzzyPlayer(Player):
     def __init__(self, racket: Racket, ball: Ball, board: Board):
         super(FuzzyPlayer, self).__init__(racket, ball, board)
-        # for Mamdami:
-        x_dist = fuzz.control.Antecedent(np.arange(-400,401,1), 'x_diff')
-        y_dist = fuzz.control.Antecedent(np.arange(0,400,1), 'y_diff')
-        velocity = fuzz.control.Consequent(np.arange(-10, 11, 1), 'paddle_speed')
-        y_dist['near'] = fuzz.trimf(y_dist.universe, [0, 0,401])
-        x_dist['far_left'] = fuzz.trimf(x_dist.universe, [-400, -100 , -4])
-        x_dist['far_right'] = fuzz.trimf(x_dist.universe, [4, 100, 400])
-        x_dist['center'] = fuzz.trimf(x_dist.universe, [-5, 0, 5])
-        velocity['right'] = fuzz.trimf(velocity.universe, [-15, -10, 2])
-        velocity['left'] = fuzz.trimf(velocity.universe, [2, 10, 15])
-        velocity['stop'] = fuzz.trimf(velocity.universe, [-3, 0, 3])
-        rule1 = fuzz.control.Rule(y_dist['near'] & x_dist['far_left'] , velocity['left'])
-        rule2 = fuzz.control.Rule(y_dist['near'] & x_dist['far_right'] , velocity['right'])
-        rule3 = fuzz.control.Rule(x_dist['center'] , velocity['stop'])
+        # # for Mamdami:
+        # x_dist = fuzz.control.Antecedent(np.arange(-400,401,1), 'x_diff')
+        # y_dist = fuzz.control.Antecedent(np.arange(0,401,1), 'y_diff')
+        # velocity = fuzz.control.Consequent(np.arange(-10, 11, 1), 'paddle_speed')
+        # y_dist['near'] = fuzz.trimf(y_dist.universe, [0, 0,401])
+        # x_dist['far_left'] = fuzz.trimf(x_dist.universe, [-400, -100 , -4])
+        # x_dist['far_right'] = fuzz.trimf(x_dist.universe, [4, 100, 400])
+        # x_dist['center'] = fuzz.trimf(x_dist.universe, [-5, 0, 5])
+        # velocity['right'] = fuzz.trimf(velocity.universe, [-15, -10, 2])
+        # velocity['left'] = fuzz.trimf(velocity.universe, [2, 10, 15])
+        # velocity['stop'] = fuzz.trimf(velocity.universe, [-3, 0, 3])
+        # rule1 = fuzz.control.Rule(y_dist['near'] & x_dist['far_left'] , velocity['left'])
+        # rule2 = fuzz.control.Rule(y_dist['near'] & x_dist['far_right'] , velocity['right'])
+        # rule3 = fuzz.control.Rule(x_dist['center'] , velocity['stop'])
         
-        self.racket_controller = fuzz.control.ControlSystem([rule1,rule2,rule3])
+        # self.racket_controller = fuzz.control.ControlSystem([rule1,rule2,rule3])
 
-        # visualize Mamdami
-        x_dist.view()
-        y_dist.view()
-        plt.show() 
+        # # visualize Mamdami
+        # x_dist.view()
+        # y_dist.view()
+        # plt.show() 
 
-        # for TSK:
-        # self.x_universe = np.arange()
-        # self.x_mf = {
-        #     "far_left": fuzz.trapmf(
-        #         self.x_universe,
-        #         [
-        #             ...
-        #         ],
-        #     ),
-        #     ...
-        # }
-        # ...
-        # self.velocity_fx = {
-        #     "f_slow_left": lambda x_diff, y_diff: -1 * (abs(x_diff) + y_diff),
-        #     ...
-        # }
+        #for TSK:
+        self.x_universe = np.arange(-400,401,1)
+        self.y_universe = np.arange(0,401,1)
+        self.x_mf = {
+            "far_left": fuzz.trapmf(self.x_universe, [-400, -400 ,-300, -100]),
+            "near_left": fuzz.trimf(self.x_universe, [-250, -50 ,0]), 
+            "near_right": fuzz.trimf(self.x_universe, [0,50,250]), 
+            "far_right": fuzz.trapmf(self.x_universe, [100, 300 ,400, 400]),
+            "center": fuzz.trimf(self.x_universe, [-10,0,10])
+        }
+        self.y_mf = {
+            "near": fuzz.trimf(self.y_universe, [0,0,400]),
+        }
+        self.velocity_fx = {
+            "f_fast_left": lambda x_diff, y_diff: 2 * (abs(x_diff) + y_diff),
+            "f_slow_left": lambda x_diff, y_diff: 1 * (abs(x_diff) + y_diff),
+            "f_slow_right": lambda x_diff, y_diff: -1 * (abs(x_diff) + y_diff),
+            "f_fast_right": lambda x_diff, y_diff: -2 * (abs(x_diff) + y_diff),
+            "stop" : lambda x_diff, y_diff: 0.0
+        }
 
-        # #visualize TSK
-        # plt.figure()
-        # for name, mf in self.x_mf.items():
-        #     plt.plot(self.x_universe, mf, label=name)
-        # plt.legend()
-        # plt.show()
-        # ...
+        #visualize TSK
+        plt.figure()
+        for name, mf in self.x_mf.items():
+            plt.plot(self.x_universe, mf, label=name)
+        plt.legend()
+        plt.show()
 
     def act(self, x_diff: int, y_diff: int):
         velocity = self.make_decision(x_diff, y_diff)
@@ -288,34 +291,33 @@ class FuzzyPlayer(Player):
     def make_decision(self, x_diff: int, y_diff: int):
         # for Mamdami:
 
-        self.racket_sim = fuzz.control.ControlSystemSimulation(self.racket_controller)       
-        self.racket_sim.input['x_diff'] = x_diff
-        self.racket_sim.input['y_diff'] = y_diff
-        self.racket_sim.compute()
-        velocity = self.racket_sim.output['paddle_speed']
+        # self.racket_sim = fuzz.control.ControlSystemSimulation(self.racket_controller)       
+        # self.racket_sim.input['x_diff'] = x_diff
+        # self.racket_sim.input['y_diff'] = y_diff
+        # self.racket_sim.compute()
+        # velocity = self.racket_sim.output['paddle_speed']
 
         # for TSK:
-        # x_vals = {
-        #     name: fuzz.interp_membership(self.x_universe, mf, x_diff)
-        #     for name, mf in self.x_mf.items()
-        # }
-        # ...
-        # rule activations with Zadeh norms
-        # activations = {
-        #     "f_slow_left": max(
-        #         [
-        #             min(x_vals...),
-        #             min(x_vals...),
-        #         ]
-        #     ),
-        #     ...
-        # }
-
-        # velocity = sum(
-        #     activations[val] * self.velocity_fx[val](x_diff, y_diff)
-        #     for val in activations
-        # ) / sum(activations[val] for val in activations)
-
+        x_vals = {
+            name: fuzz.interp_membership(self.x_universe, mf, x_diff)
+            for name, mf in self.x_mf.items()
+        }
+        y_vals = {
+            name: fuzz.interp_membership(self.y_universe, mf, y_diff)
+            for name, mf in self.y_mf.items()
+        }
+        #rule activations with Zadeh norms
+        activations = {
+            "f_slow_left": max(min(x_vals["far_left"],1 - y_vals["near"]),x_vals["near_left"]),
+            "f_fast_left":  min(x_vals["far_left"], y_vals["near"]),
+            "f_slow_right": max(min(x_vals["far_right"],1 - y_vals["near"]), x_vals["near_right"]),
+            "f_fast_right": min(x_vals["far_right"], y_vals["near"]),
+            "stop" : x_vals["center"]
+        }
+        velocity = sum(
+            activations[val] * self.velocity_fx[val](x_diff, y_diff)
+            for val in activations
+        ) / (sum(activations[val] for val in activations))
         return velocity
 
 
