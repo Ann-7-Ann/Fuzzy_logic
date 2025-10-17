@@ -278,11 +278,17 @@ class FuzzyPlayer(Player):
         }
 
         #visualize TSK
-        plt.figure()
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
         for name, mf in self.x_mf.items():
-            plt.plot(self.x_universe, mf, label=name)
-        plt.legend()
+            ax1.plot(self.x_universe, mf, label=name)
+        ax1.set_title("Membership functions for x")
+        ax1.legend()
+        for name, mf in self.y_mf.items():
+            ax2.plot(self.y_universe, mf, label=name)
+        ax2.set_title("Membership functions for y")
+        ax2.legend()
         plt.show()
+        
 
     def act(self, x_diff: int, y_diff: int):
         velocity = self.make_decision(x_diff, y_diff)
