@@ -263,17 +263,20 @@ class FuzzyPlayer(Player):
             "far_left": fuzz.trapmf(self.x_universe, [-400, -400 ,-300, -100]),
             "near_left": fuzz.trimf(self.x_universe, [-250, -50 ,0]), 
             "near_right": fuzz.trimf(self.x_universe, [0,50,250]), 
-            "far_right": fuzz.trapmf(self.x_universe, [100, 300 ,400, 400]),
-            "center": fuzz.trimf(self.x_universe, [-10,0,10])
+            "far_right": fuzz.trapmf(self.x_universe, [100, 300 ,401, 401]),
+            "center_left": fuzz.trimf(self.x_universe, [-20,-10,1]),
+            "center_right": fuzz.trimf(self.x_universe, [0,10,21]),
+            "edge_left": fuzz.trimf(self.x_universe, [-40,-25,-19]),
+            "edge_right": fuzz.trimf(self.x_universe, [20,25,41]),
         }
         self.y_mf = {
             "near": fuzz.trimf(self.y_universe, [0,0,400]),
         }
         self.velocity_fx = {
-            "f_fast_right": lambda x_diff, y_diff: 2 * (abs(x_diff) + y_diff),
+            "f_fast_right": lambda x_diff, y_diff: self.racket.max_speed,
             "f_slow_right": lambda x_diff, y_diff: 1 * (abs(x_diff) + y_diff),
             "f_slow_left": lambda x_diff, y_diff: -1 * (abs(x_diff) + y_diff),
-            "f_fast_left": lambda x_diff, y_diff: -2 * (abs(x_diff) + y_diff),
+            "f_fast_left": lambda x_diff, y_diff: -self.racket.max_speed,
             "stop" : lambda x_diff, y_diff: 0.0
         }
 
@@ -314,11 +317,11 @@ class FuzzyPlayer(Player):
         }
         #rule activations with Zadeh norms
         activations = {
-            "f_slow_right": max(min(x_vals["far_left"],1 - y_vals["near"]),x_vals["near_left"]),
+            "f_slow_right": max(min(x_vals["far_left"],1 - y_vals["near"]),x_vals["near_left"], x_vals["center_left"]),
             "f_fast_right":  min(x_vals["far_left"], y_vals["near"]),
-            "f_slow_left": max(min(x_vals["far_right"],1 - y_vals["near"]), x_vals["near_right"]),
+            "f_slow_left": max(min(x_vals["far_right"],1 - y_vals["near"]), x_vals["near_right"], x_vals["center_right"]),
             "f_fast_left": min(x_vals["far_right"], y_vals["near"]),
-            "stop" : x_vals["center"]
+            "stop" : max(x_vals["center_left"],x_vals["center_right"])
         }
         velocity = sum(
             activations[val] * self.velocity_fx[val](x_diff, y_diff)
