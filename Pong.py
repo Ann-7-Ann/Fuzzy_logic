@@ -270,10 +270,10 @@ class FuzzyPlayer(Player):
             "near": fuzz.trimf(self.y_universe, [0,0,400]),
         }
         self.velocity_fx = {
-            "f_fast_left": lambda x_diff, y_diff: 2 * (abs(x_diff) + y_diff),
-            "f_slow_left": lambda x_diff, y_diff: 1 * (abs(x_diff) + y_diff),
-            "f_slow_right": lambda x_diff, y_diff: -1 * (abs(x_diff) + y_diff),
-            "f_fast_right": lambda x_diff, y_diff: -2 * (abs(x_diff) + y_diff),
+            "f_fast_right": lambda x_diff, y_diff: 2 * (abs(x_diff) + y_diff),
+            "f_slow_right": lambda x_diff, y_diff: 1 * (abs(x_diff) + y_diff),
+            "f_slow_left": lambda x_diff, y_diff: -1 * (abs(x_diff) + y_diff),
+            "f_fast_left": lambda x_diff, y_diff: -2 * (abs(x_diff) + y_diff),
             "stop" : lambda x_diff, y_diff: 0.0
         }
 
@@ -308,10 +308,10 @@ class FuzzyPlayer(Player):
         }
         #rule activations with Zadeh norms
         activations = {
-            "f_slow_left": max(min(x_vals["far_left"],1 - y_vals["near"]),x_vals["near_left"]),
-            "f_fast_left":  min(x_vals["far_left"], y_vals["near"]),
-            "f_slow_right": max(min(x_vals["far_right"],1 - y_vals["near"]), x_vals["near_right"]),
-            "f_fast_right": min(x_vals["far_right"], y_vals["near"]),
+            "f_slow_right": max(min(x_vals["far_left"],1 - y_vals["near"]),x_vals["near_left"]),
+            "f_fast_right":  min(x_vals["far_left"], y_vals["near"]),
+            "f_slow_left": max(min(x_vals["far_right"],1 - y_vals["near"]), x_vals["near_right"]),
+            "f_fast_left": min(x_vals["far_right"], y_vals["near"]),
             "stop" : x_vals["center"]
         }
         velocity = sum(
