@@ -264,16 +264,16 @@ class FuzzyPlayer(Player):
             "near_left": fuzz.trimf(self.x_universe, [-250, -50 ,0]), 
             "near_right": fuzz.trimf(self.x_universe, [0,50,250]), 
             "far_right": fuzz.trapmf(self.x_universe, [100, 300 ,400, 400]),
-            "center": fuzz.trimf(self.x_universe, [-10,0,10])
+            "center": fuzz.trimf(self.x_universe, [-40,0,40])
         }
         self.y_mf = {
             "near": fuzz.trimf(self.y_universe, [0,0,400]),
         }
         self.velocity_fx = {
-            "f_fast_right": lambda x_diff, y_diff: 2 * (abs(x_diff) + y_diff),
-            "f_slow_right": lambda x_diff, y_diff: 1 * (abs(x_diff) + y_diff),
-            "f_slow_left": lambda x_diff, y_diff: -1 * (abs(x_diff) + y_diff),
-            "f_fast_left": lambda x_diff, y_diff: -2 * (abs(x_diff) + y_diff),
+            "f_fast_right": lambda x_diff, y_diff: self.racket.max_speed,
+            "f_slow_right": lambda x_diff, y_diff: min(1 * (abs(x_diff) + y_diff),self.racket.max_speed),
+            "f_slow_left": lambda x_diff, y_diff: max(-1 * (abs(x_diff) + y_diff), -self.racket.max_speed),
+            "f_fast_left": lambda x_diff, y_diff: -self.racket.max_speed,
             "stop" : lambda x_diff, y_diff: 0.0
         }
 
