@@ -237,13 +237,13 @@ class FuzzyPlayer(Player):
         # # for Mamdami:
         x_dist = fuzz.control.Antecedent(np.arange(-400,401,1), 'x_diff')
         y_dist = fuzz.control.Antecedent(np.arange(0,401,1), 'y_diff')
-        velocity = fuzz.control.Consequent(np.arange(-self.racket.max_speed,self.racket.max_speed+1, 1), 'paddle_speed')
-        y_dist['near'] = fuzz.trimf(y_dist.universe, [0,0,401])
-        x_dist['left'] = fuzz.trapmf(x_dist.universe, [-400, -400,-50, 0])
-        x_dist['center'] = fuzz.trimf(x_dist.universe, [-2, 0, 2])
-        x_dist['right'] = fuzz.trapmf(x_dist.universe, [0,50,  400, 400])
-        velocity['right'] = fuzz.trimf(velocity.universe, [-self.racket.max_speed, -self.racket.max_speed,  0])
-        velocity['left']  = fuzz.trimf(velocity.universe, [0, self.racket.max_speed, self.racket.max_speed])
+        velocity = fuzz.control.Consequent(np.arange(-self.racket.max_speed-10,self.racket.max_speed+10, 1), 'paddle_speed')
+        y_dist['near'] = fuzz.trimf(y_dist.universe, [-401,0,401])
+        x_dist['left'] = fuzz.trapmf(x_dist.universe, [-400, -400,-40, 0])
+        x_dist['center'] = fuzz.trimf(x_dist.universe, [-10, 0, 10])
+        x_dist['right'] = fuzz.trapmf(x_dist.universe, [0,40,  400, 400])
+        velocity['right'] = fuzz.trimf(velocity.universe, [-self.racket.max_speed-10, -self.racket.max_speed,  0])
+        velocity['left']  = fuzz.trimf(velocity.universe, [0, self.racket.max_speed, self.racket.max_speed+10])
         velocity['stop']  = fuzz.trimf(velocity.universe, [-1, 0, 1])
         rule1 = fuzz.control.Rule(y_dist['near'] & x_dist['left'], velocity['left'])
         rule2 = fuzz.control.Rule(y_dist['near'] & x_dist['right'], velocity['right'])
@@ -303,6 +303,10 @@ class FuzzyPlayer(Player):
         self.racket_sim.input['y_diff'] = y_diff
         self.racket_sim.compute()
         velocity = self.racket_sim.output['paddle_speed']
+
+        print("start")
+        print(x_diff)
+        print(y_diff)
         print(velocity)
 
 
