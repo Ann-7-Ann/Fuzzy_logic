@@ -5,7 +5,8 @@ import pygame
 from enum import Enum, unique
 import sys
 import random
-
+import numpy as np
+from collections import deque
 
 FPS = 10
 
@@ -20,7 +21,7 @@ GRID_HEIGHT = HEIGHT // GRID_SIDE
 BRIGHT_BG = (103, 223, 235)
 DARK_BG = (78, 165, 173)
 
-SNAKE_COL = (6, 38, 7)
+SNAKE_COL = (0, 255, 255)
 FOOD_COL = (224, 160, 38)
 OBSTACLE_COL = (209, 59, 59)
 VISITED_COL = (24, 42, 142)
@@ -289,15 +290,82 @@ class SearchBasedPlayer(Player):
     def __init__(self):
         super(SearchBasedPlayer, self).__init__()
 
-    def search_path(self, snake: Snake, food: Food, *obstacles: Set[Obstacle]):
-        # self.generate_states...
-        # ...
-        pass
+    #position (0,0) - top,left corner
+    def get_neighbors(self, pos: Position):
+        candidates = [
+            Position(pos.x + 1, pos.y), #right
+            Position(pos.x - 1, pos.y), #left
+            Position(pos.x, pos.y + 1), #down
+            Position(pos.x, pos.y - 1)  #up
+        ]
 
+        valid_states = [
+            p for p in candidates
+            if not p.check_bounds(GRID_WIDTH, GRID_HEIGHT)
+        ]
+
+        return valid_states
+    
+    def positions_to_directions(self, path: list):
+
+        directions = []
+
+        for i in range(1, len(path)):
+            px, py = path[i - 1].x, path[i - 1].y
+            nx, ny = path[i].x, path[i].y
+
+            if nx == px + 1: directions.append(Direction.RIGHT)
+            elif nx == px - 1: directions.append(Direction.LEFT)
+            elif ny == py + 1: directions.append(Direction.DOWN)
+            elif ny == py - 1: directions.append(Direction.UP)
+
+        return directions
+
+    def search_path(self, snake: Snake, food: Food, *obstacles: Set[Obstacle]):
+        
+        start_state = snake.get_head_position()
+        target_state = food.position
+
+        # Blocked cells (obstacles + snake body)
+        blocked = {obs.position for obs in obstacles[0]}
+        blocked.update(snake.positions) 
+
+        queue = deque([start_state])  #speeds process for BFS-removing from the begining
+        self.visited = {start_state}
+        parent = {start_state: None}
+
+        while queue:
+            #current = queue.popleft()  #BFS - FIFO
+            current = queue.pop()  #DFS  -FILO
+
+
+            if current == target_state:
+                break  # path found!
+
+            for neighbor in self.get_neighbors(current):
+                if neighbor not in self.visited and neighbor not in blocked:
+                    self.visited.add(neighbor)
+                    parent[neighbor] = current
+                    queue.append(neighbor)
+
+        # No path found
+        if target_state not in parent:
+            return None
+
+        # Reconstruct the path from target → start
+        path = []
+        node = target_state
+        while node is not None:
+            path.append(node)
+            node = parent[node]
+
+        path.reverse()
+        self.chosen_path = self.positions_to_directions(path)
+    
 
 if __name__ == "__main__":
     snake = Snake(WIDTH, WIDTH, INIT_LENGTH)
-    player = HumanPlayer()
-    # player = SearchBasedPlayer()
+    #player = HumanPlayer()
+    player = SearchBasedPlayer()
     game = SnakeGame(snake, player)
     game.run()
