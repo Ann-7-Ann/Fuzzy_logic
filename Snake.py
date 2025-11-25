@@ -7,6 +7,7 @@ import sys
 import random
 import numpy as np
 from collections import deque
+import heapq
 
 FPS = 10
 
@@ -21,7 +22,7 @@ GRID_HEIGHT = HEIGHT // GRID_SIDE
 BRIGHT_BG = (103, 223, 235)
 DARK_BG = (78, 165, 173)
 
-SNAKE_COL = (0, 255, 255)
+SNAKE_COL = (0, 140, 255)
 FOOD_COL = (224, 160, 38)
 OBSTACLE_COL = (209, 59, 59)
 VISITED_COL = (24, 42, 142)
@@ -286,9 +287,9 @@ class HumanPlayer(Player):
 # ----------------------------------
 
 
-class SearchBasedPlayer(Player):
+class DFS_BFS_SearchBasedPlayer(Player):
     def __init__(self):
-        super(SearchBasedPlayer, self).__init__()
+        super(DFS_BFS_SearchBasedPlayer, self).__init__()
 
     #position (0,0) - top,left corner
     def get_neighbors(self, pos: Position):
@@ -361,11 +362,162 @@ class SearchBasedPlayer(Player):
 
         path.reverse()
         self.chosen_path = self.positions_to_directions(path)
+
+
+class DijkstraSearchBasedPlayer(Player):
+    def __init__(self):
+        super(DijkstraSearchBasedPlayer, self).__init__()
+
+    #position (0,0) - top,left corner
+    def get_neighbors(self, pos: Position):
+        neighbors = []
+
+        for direction in Direction:
+            dx, dy = direction.value
+            new_pos = Position(pos.x + dx, pos.y + dy)
+
+            if new_pos.check_bounds(GRID_WIDTH, GRID_HEIGHT):
+                continue
+
+            neighbors.append((new_pos, direction))
+
+        return neighbors
+    
+    def search_path(self, snake: Snake, food: Food, *obstacles: Set[Obstacle]):
+
+        start_state = snake.get_head_position()
+        target_state = food.position
+
+        tie_breaker = 0    #first in, first out
+        pq = [(0, tie_breaker, start_state)] #Priority queue, min-heap sorting 
+        
+        cost = {start_state: 0}
+        parent = {}
+        self.visited.clear()
+
+        # Blocked cells (obstacles + snake body)
+        blocked = {obs.position for obs in obstacles[0]}
+        blocked.update(snake.positions)
+
+        while pq:
+            current_cost, _, current = heapq.heappop(pq)   #min distance node 
+            self.visited.add(current)
+
+            if current == food.position:
+                break
+
+            if current_cost > cost[current]:
+                continue
+
+            for neighbour, direction in self.get_neighbors(current):
+
+                if neighbour in blocked:
+                    continue
+
+                current_cost += 1   #cost
+                if neighbour not in cost or current_cost < cost[neighbour]:  #new or lower cost
+                    cost[neighbour] = current_cost
+                    parent[neighbour] = (current, direction)
+                    tie_breaker += 1
+                    heapq.heappush(pq, (current_cost, tie_breaker, neighbour))
+
+        # Reconstruct the path from target → start
+        cur = target_state
+        if cur not in parent:
+            return  # No path 
+
+        path = []
+        while cur != start_state:
+            prev, direction = parent[cur]
+            path.append(direction)
+            cur = prev
+
+        path.reverse()
+        self.chosen_path = path
+    
+
+
+class AStarSearchBasedPlayer(Player):
+    def __init__(self):
+        super(AStarSearchBasedPlayer, self).__init__()
+
+    def heuristic(self, current: Position, food: Position):
+        return abs(current.x - food.x) + abs(current.y - food.y)  # Manhattan admissable (never overestimates)
+    
+    def cost(self, dist):
+        return self.heuristic() + dist
+    
+    #position (0,0) - top,left corner
+    def get_neighbors(self, pos: Position):
+        neighbors = []
+
+        for direction in Direction:
+            dx, dy = direction.value
+            new_pos = Position(pos.x + dx, pos.y + dy)
+
+            if new_pos.check_bounds(GRID_WIDTH, GRID_HEIGHT):
+                continue
+
+            neighbors.append((new_pos, direction))
+
+        return neighbors
+    
+    def search_path(self, snake: Snake, food: Food, *obstacles: Set[Obstacle]):
+
+        start_state = snake.get_head_position()
+        target_state = food.position
+        
+        cost = {start_state: 0}
+        dist = {start_state: self.heuristic(start_state, target_state) }
+        tie_breaker = 0 
+        pq = [(dist , tie_breaker, start_state)] #Priority queue, min-heap sorting 
+        parent = {}
+        self.visited.clear()
+
+        # Blocked cells (obstacles + snake body)
+        blocked = {obs.position for obs in obstacles[0]}
+        blocked.update(snake.positions)
+
+        while pq:
+            current_cost_func,_, current = heapq.heappop(pq)   #min distance node 
+            self.visited.add(current)
+
+            if current == food.position:
+                break
+
+            for neighbour, direction in self.get_neighbors(current):
+
+                if neighbour in blocked:
+                    continue
+
+                current_cost =+ 1   #cost
+                current_dist = self.heuristic(current,food.position)
+                if neighbour not in cost or current_cost < cost[neighbour]:  #new or lower distance
+                    cost[neighbour] = current_cost
+                    parent[neighbour] = (current, direction)
+                    tie_breaker += 1
+                    heapq.heappush(pq, (current_dist+current_cost, tie_breaker, neighbour))
+
+        # Reconstruct the path from target → start
+        cur = target_state
+        if cur not in parent:
+            return  # No path 
+
+        path = []
+        while cur != start_state:
+            prev, direction = parent[cur]
+            path.append(direction)
+            cur = prev
+
+        path.reverse()
+        self.chosen_path = path
     
 
 if __name__ == "__main__":
     snake = Snake(WIDTH, WIDTH, INIT_LENGTH)
     #player = HumanPlayer()
-    player = SearchBasedPlayer()
+    #player = DFS_BFS_SearchBasedPlayer()
+    #player = DijkstraSearchBasedPlayer()
+    player = AStarSearchBasedPlayer()
     game = SnakeGame(snake, player)
     game.run()
